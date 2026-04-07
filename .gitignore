@@ -1,0 +1,15 @@
+documentation/
+
+Qwen2.5-3B-engee-lora-70st/
+Qwen2.5-3B-engee-lora-110st/
+qdrant_storage/
+
+union_dataset/
+Trainer/
+
+start_docker
+
+models_to_describe_convertor.py
+convert_docs_to_embedings.py
+
+.env
