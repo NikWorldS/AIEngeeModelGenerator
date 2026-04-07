@@ -1,3 +1,5 @@
+import json
+
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -5,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 from ollama import Client
 
 class OLLAMA_PARAMS:
-    OLLAMA_MODEL_NAME = "qwenc2.5-7bq4-engee:latest"
+    OLLAMA_MODEL_NAME = "engee/qwen-julia"
 
 
 class QDRANT_PARAMS:
@@ -40,7 +42,7 @@ class MainPipeline:
     def __get_embedding(self, chunk_text) -> list[list[float]]:
         embedding = self.__embedding_model.encode(
             chunk_text
-            ).tolist()
+        ).tolist()
         return embedding
 
     def query(self):
@@ -58,10 +60,9 @@ class MainPipeline:
 
         for _, scope in results:
             for point in scope:
-                context_list.append(str(point.payload))
-                # print(str(point.payload))
+                context_list.append(point.payload)
 
-        return " ".join(context_list)
+        return context_list
 
     def get_system_prompt(self, context_text: str):
         SYSTEM_PROMPT = f"""
@@ -70,8 +71,11 @@ class MainPipeline:
         - Отвечай ТОЛЬКО кодом, без пояснений.
         - Используй функции engee.create, engee.add_block, engee.set_param!, engee.add_line, engee.save.
         - Код ОБЯЗАТЕЛЬНО должен компилироваться и работать без ошибок.
-
+        - Анализируй контекст из базы знаний (в ней представлена документация блоков: путь в библиотеке, описание, параметры, порты)
+        - На основе этой информации напиши требуемый скрипт на языке Julia
         
+        Контекст документации блоков: <CONTEXT_START>{" ".join(str(context_text))}<CONTEXT_END>
+                
         Всегда используй только:
         - engee.create
         - engee.add_block
@@ -109,10 +113,6 @@ class MainPipeline:
         engee.save("sum_of_constants", "sum_of_constants.engee", force=true)
         >>
         """
-        #         Контекст документации блоков: <CONTEXT_START>{context_text}<CONTEXT_END>
-
-        # - Анализируй контекст из базы знаний (в ней представлена документация блоков: путь в библиотеке, описание, параметры, порты)
-        # - На основе этой информации напиши требуемый скрипт на языке Julia
         return SYSTEM_PROMPT
 
 
@@ -142,12 +142,10 @@ class MainPipeline:
 
         messages = self.get_messages(user_prompt, context)
 
-        print(messages)
-
         response = self.__ollama_client.chat(
             model=OLLAMA_PARAMS.OLLAMA_MODEL_NAME,
             messages=messages,
-            )
+        )
 
         print(response.message.content)
 
