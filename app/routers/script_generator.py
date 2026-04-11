@@ -1,7 +1,6 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 from concurrent.futures import TimeoutError
 from fastapi import APIRouter, HTTPException
-from grpc import FutureTimeoutError
 from pydantic import BaseModel, Field
 import logging
 
