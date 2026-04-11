@@ -3,11 +3,9 @@ from qdrant_client.models import VectorParams, Distance
 from qdrant_client.http.exceptions import UnexpectedResponse
 from sentence_transformers import SentenceTransformer
 from ollama import Client
-from dotenv import load_dotenv
 import torch
 import os
 
-load_dotenv()
 
 class OllamaParams:
     """Parameters for OLLAMA"""
@@ -154,4 +152,3 @@ class MainPipeline:
 if __name__ == "__main__":
     main_pipeline = MainPipeline()
     main_pipeline.main()
-
