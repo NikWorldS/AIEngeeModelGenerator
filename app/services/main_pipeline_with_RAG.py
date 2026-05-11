@@ -1,36 +1,20 @@
+from typing import Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 from qdrant_client.http.exceptions import UnexpectedResponse
 from sentence_transformers import SentenceTransformer
 from ollama import Client
+import numpy as np
 import torch
-import os
 
+from app.core.config import Settings
 
-class OllamaParams:
-    """Parameters for OLLAMA"""
-    def __init__(self):
-        self.model_name = os.getenv("OLLAMA_MODEL_NAME")
-
-
-class QdrantParams:
-    """parameters for connection to qdrant DB"""
-    def __init__(self):
-        self.db_host = os.getenv("QDRANT_HOST", "localhost")
-        self.db_port = os.getenv("QDRANT_PORT", "6333")
-        self.collection_name = os.getenv("QDRANT_COLLECTION_NAME", "base_collection")
-
-    @property
-    def get_qdrant_url(self) -> str:
-        """Return the qdrant url for connecting"""
-        return f"http://{self.db_host}:{self.db_port}"
 
 class MainPipeline:
     """Main pipeline for model response using context from qdrant vector database"""
 
-    def __init__(self):
-        self.__ollama_params = OllamaParams()
-        self.__qdrant_params = QdrantParams()
+    def __init__(self, settings: Settings):
+        self.__settings = settings
 
         self.__embedding_model = SentenceTransformer(
             model_name_or_path="ai-forever/ru-en-RoSBERTa",
@@ -39,8 +23,8 @@ class MainPipeline:
 
         self.__ollama_client = Client()
 
-        self.__qdrant_client = QdrantClient(url=self.__qdrant_params.get_qdrant_url)
-        self.__create_qdrant_collection(self.__qdrant_params.collection_name)
+        self.__qdrant_client = QdrantClient(url=self.__settings.qdrant_url)
+        self.__create_qdrant_collection(self.__settings.qdrant_collection_name)
 
     def __create_qdrant_collection(self, collection_name) -> None:
         """Create the qdrant collection if its not exists with the given name"""
@@ -54,7 +38,7 @@ class MainPipeline:
                     distance=Distance.DOT
                 ),
             )
-    def __get_embedding(self, chunk_text) -> list[list[float]]:
+    def __get_embedding(self, chunk_text: str) -> Optional[list[np.ndarray]]:
         """Return the embedding of the chunk text"""
         embedding = self.__embedding_model.encode(
             chunk_text
@@ -66,7 +50,7 @@ class MainPipeline:
         context_list: list[str] = []
 
         results = self.__qdrant_client.query_points(
-            collection_name=self.__qdrant_params.collection_name,
+            collection_name=self.__settings.qdrant_collection_name,
             query=self.__get_embedding(prompt_text),
             limit=5,
             with_payload=True
@@ -128,9 +112,11 @@ class MainPipeline:
         ]
         return messages
 
-
     def main(self):
-        """Gets user prompt, augmenting with context from db and return model response"""
+        """
+        CAN BE DEPRECATED
+        Gets user prompt, augmenting with context from db and return model response
+        """
         user_prompt = str(input("Введите промпт:\n"))
 
         context = self.get_contexts(user_prompt)
@@ -138,7 +124,7 @@ class MainPipeline:
         messages = self.get_messages(user_prompt, context)
 
         response = self.__ollama_client.chat(
-            model=self.__ollama_params.model_name,
+            model=self.__settings.ollama_model_name,
             messages=messages,
         )
 
@@ -148,12 +134,8 @@ class MainPipeline:
         context = self.get_contexts(user_prompt)
         messages = self.get_messages(user_prompt, context)
         response = self.__ollama_client.chat(
-            model=self.__ollama_params.model_name,
+            model=self.__settings.ollama_model_name,
             messages=messages,
         )
 
         return response.message.content
-
-if __name__ == "__main__":
-    main_pipeline = MainPipeline()
-    main_pipeline.main()
