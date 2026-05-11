@@ -14,6 +14,7 @@ settings = get_settings()
 router = APIRouter()
 main_pipeline = MainPipeline(settings)
 
+
 executor = ThreadPoolExecutor(max_workers=2)
 
 class GenerateRequest(BaseModel):
@@ -27,13 +28,13 @@ def generate(request: GenerateRequest):
     logger.info("Generate request received")
     try:
         future = executor.submit(main_pipeline.generate_script, request.prompt)
-        script = future.result(timeout=40)
+        script = future.result(timeout=settings.generation_timeout)
         logger.info(f"Generated script succeded")
     except TimeoutError:
-        logger.warning(f"Generation timed out")
-        raise HTTPException(status_code=504, detail="Model timeout")
+        logger.warning(f"Generation timeout after {settings.generation_timeout}s")
+        raise HTTPException(status_code=504, detail="Generation timeout")
     except Exception as e:
-        logger.warning(f"Generation failed")
+        logger.warning(f"Generation failed with error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
 
     return GenerateResponse(script=script)

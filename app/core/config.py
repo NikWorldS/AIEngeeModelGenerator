@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     qdrant_port: int = 6333
     qdrant_collection_name: str = "base_collection"
 
+    generation_timeout_seconds: int = 120
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -31,6 +33,10 @@ class Settings(BaseSettings):
     @property
     def ollama_model_name(self) -> str:
         return self.ollama_model_name
+
+    @property
+    def generation_timeout(self) -> int:
+        return self.generation_timeout_seconds
 
 @lru_cache
 def get_settings() -> Settings:
