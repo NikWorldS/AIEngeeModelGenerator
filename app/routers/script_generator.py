@@ -5,11 +5,14 @@ from pydantic import BaseModel, Field
 import logging
 
 from app.services.main_pipeline_with_RAG import MainPipeline
+from app.core.config import get_settings
 
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
+
 router = APIRouter()
-main_pipeline = MainPipeline()
+main_pipeline = MainPipeline(settings)
 
 executor = ThreadPoolExecutor(max_workers=2)
 
