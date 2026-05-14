@@ -16,6 +16,13 @@ class Settings(BaseSettings):
 
     generation_timeout_seconds: int = 120
 
+    postgres_host: str = "localhost"
+    postgres_port: int = "5432"
+    postgres_db: str
+    postgres_user: str
+    postgres_password: str
+
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -37,6 +44,13 @@ class Settings(BaseSettings):
     @property
     def generation_timeout(self) -> int:
         return self.generation_timeout_seconds
+
+    @property
+    def postgres_url(self) -> str:
+        return (
+            f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        )
 
 @lru_cache
 def get_settings() -> Settings:
