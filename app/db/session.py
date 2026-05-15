@@ -7,7 +7,7 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-engine: Engine = create_engine(settings.postgresql_url, pool_pre_ping=True)
+engine: Engine = create_engine(settings.postgres_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
