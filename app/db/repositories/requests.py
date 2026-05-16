@@ -11,6 +11,13 @@ def create_request(
     request_id: uuid.UUID,
     request_text: str,
 ) -> Request:
+    """
+    Создаёт запись о запросе.
+    :param session: Session, сессия db
+    :param request_id: UUID, id в формате uuid
+    :param request_text: str, текст запроса
+    :return: Request
+    """
     request = Request(
         request_id=request_id,
         request_text=request_text,
@@ -29,6 +36,15 @@ def mark_request_error(
     error_type: str,
     error_message: str,
 ) -> Request | None:
+    """
+    Изменяет статус запроса (по request_id) на `error`.
+    :param session: Session, сессия db
+    :param request_id: UUID, id в формате uuid
+    :param duration: float, длительность обработки запроса
+    :param error_type: str, тип (или заголовок) ошибки
+    :param error_message: str, сообщение ошибки
+    :return: Request
+    """
     request = _get_request_by_request_id(session, request_id)
     if request is None:
         return None
@@ -49,6 +65,14 @@ def mark_request_success(
     response_text: str,
     duration: float,
 ) -> Request | None:
+    """
+    Изменяет статус запроса (по request_id) на `success`.
+    :param session: Session, сессия db
+    :param request_id: UUID, id в формате uuid
+    :param response_text: str, текст ответа
+    :param duration: float, длительность обработки
+    :return: Request
+    """
     request = _get_request_by_request_id(session, request_id)
     if request is None:
         return None
