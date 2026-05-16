@@ -5,7 +5,7 @@ from sqlalchemy import BigInteger, CheckConstraint, DateTime, Float, String, Tex
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base
+from app.db.models.base import Base
 
 
 class Request(Base):

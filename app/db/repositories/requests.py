@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.requests import Request
+from app.db.models.requests import Request
 
 
 def create_request(
