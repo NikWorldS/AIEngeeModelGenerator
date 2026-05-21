@@ -136,6 +136,7 @@ class MainPipeline:
         response = self.__ollama_client.chat(
             model=self.__settings.ollama_model_name,
             messages=messages,
+            keep_alive=False,
         )
 
         return response.message.content
