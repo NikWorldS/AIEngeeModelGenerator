@@ -28,24 +28,6 @@ class MainPipeline:
     #             ),
     #         )
 
-    # def get_contexts(self, prompt_text: str) -> list[str]:
-    #     """Return list with 5 closest to prompt records (block describes)"""
-    #     context_list: list[str] = []
-    #
-    #     results = self.retriever.query_points(
-    #         query=self.__get_embedding(prompt_text),
-    #         limit=5,
-    #     )
-    #
-    #     points = results.points
-    #     for point in points:
-    #         context_list.append(str(point.payload))
-    #
-    #     if len(context_list) == 0:
-    #         return ["Не найдено подходящих блоков"]
-    #
-    #     return context_list
-
     @staticmethod
     def get_system_prompt(context_text: list[str]) -> str:
         """Return system prompt with adding context text"""
@@ -93,24 +75,6 @@ class MainPipeline:
             {"role": "user", "content": "твоя текущая задача - составить скрипт по следующему от пользователя указанию: " + user_prompt},
         ]
         return messages
-
-    # def main(self):
-    #     """
-    #     CAN BE DEPRECATED
-    #     Gets user prompt, augmenting with context from db and return model response
-    #     """
-    #     user_prompt = str(input("Введите промпт:\n"))
-    #
-    #     context = self.get_contexts(user_prompt)
-    #
-    #     messages = self.get_messages(user_prompt, context)
-    #
-    #     response = self.__ollama_client.chat(
-    #         model=self.__settings.ollama_model_name,
-    #         messages=messages,
-    #     )
-    #
-    #     print(response.message.content)
 
     def generate_script(self, user_prompt: str) -> str:
         context = self.__retriever.query_points(user_prompt)
