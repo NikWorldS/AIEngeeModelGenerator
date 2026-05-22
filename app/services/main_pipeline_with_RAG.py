@@ -1,71 +1,53 @@
-from typing import Optional
-from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance
-from qdrant_client.http.exceptions import UnexpectedResponse
-from sentence_transformers import SentenceTransformer
 from ollama import Client
-import numpy as np
-import torch
 
 from app.core.config import Settings
+from app.vector_db.retriever import QdrantRetriever
 
 
 class MainPipeline:
     """Main pipeline for model response using context from qdrant vector database"""
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, retriever: QdrantRetriever) -> None:
         self.__settings = settings
-
-        self.__embedding_model = SentenceTransformer(
-            model_name_or_path="ai-forever/ru-en-RoSBERTa",
-            device="cuda" if torch.cuda.is_available() else "cpu",
-        )
+        self.__retriever = retriever
 
         self.__ollama_client = Client()
 
-        self.__qdrant_client = QdrantClient(url=self.__settings.qdrant_url)
-        self.__create_qdrant_collection(self.__settings.qdrant_collection_name)
+        # self.__create_qdrant_collection(self.__settings.qdrant_collection_name)
 
-    def __create_qdrant_collection(self, collection_name) -> None:
-        """Create the qdrant collection if its not exists with the given name"""
-        try:
-            self.__qdrant_client.get_collection(collection_name)
-        except UnexpectedResponse:
-            self.__qdrant_client.create_collection(
-                collection_name=collection_name,
-                vectors_config=VectorParams(
-                    size=self.__embedding_model.get_sentence_embedding_dimension(),
-                    distance=Distance.DOT
-                ),
-            )
-    def __get_embedding(self, chunk_text: str) -> Optional[list[np.ndarray]]:
-        """Return the embedding of the chunk text"""
-        embedding = self.__embedding_model.encode(
-            chunk_text
-        ).tolist()
-        return embedding
+    # def __create_qdrant_collection(self, collection_name) -> None:
+    #     """Create the qdrant collection if its not exists with the given name"""
+    #     try:
+    #         self.__qdrant_client.get_collection(collection_name)
+    #     except UnexpectedResponse:
+    #         self.__qdrant_client.create_collection(
+    #             collection_name=collection_name,
+    #             vectors_config=VectorParams(
+    #                 size=self.__embedding_model.get_sentence_embedding_dimension(),
+    #                 distance=Distance.DOT
+    #             ),
+    #         )
 
-    def get_contexts(self, prompt_text: str) -> list[str]:
-        """Return list with 5 closest to prompt records (block describes)"""
-        context_list: list[str] = []
+    # def get_contexts(self, prompt_text: str) -> list[str]:
+    #     """Return list with 5 closest to prompt records (block describes)"""
+    #     context_list: list[str] = []
+    #
+    #     results = self.retriever.query_points(
+    #         query=self.__get_embedding(prompt_text),
+    #         limit=5,
+    #     )
+    #
+    #     points = results.points
+    #     for point in points:
+    #         context_list.append(str(point.payload))
+    #
+    #     if len(context_list) == 0:
+    #         return ["Не найдено подходящих блоков"]
+    #
+    #     return context_list
 
-        results = self.__qdrant_client.query_points(
-            collection_name=self.__settings.qdrant_collection_name,
-            query=self.__get_embedding(prompt_text),
-            limit=5,
-            with_payload=True
-        )
-
-        points = results.points
-        for point in points:
-            context_list.append(str(point.payload))
-
-        if len(context_list) == 0:
-            return ["Не найдено подходящих блоков"]
-
-        return context_list
-
-    def get_system_prompt(self, context_text: list[str]) -> str:
+    @staticmethod
+    def get_system_prompt(context_text: list[str]) -> str:
         """Return system prompt with adding context text"""
         joined_context: str = f"\n\n\n----\n\n\n".join(context_text)
 
@@ -112,26 +94,26 @@ class MainPipeline:
         ]
         return messages
 
-    def main(self):
-        """
-        CAN BE DEPRECATED
-        Gets user prompt, augmenting with context from db and return model response
-        """
-        user_prompt = str(input("Введите промпт:\n"))
-
-        context = self.get_contexts(user_prompt)
-
-        messages = self.get_messages(user_prompt, context)
-
-        response = self.__ollama_client.chat(
-            model=self.__settings.ollama_model_name,
-            messages=messages,
-        )
-
-        print(response.message.content)
+    # def main(self):
+    #     """
+    #     CAN BE DEPRECATED
+    #     Gets user prompt, augmenting with context from db and return model response
+    #     """
+    #     user_prompt = str(input("Введите промпт:\n"))
+    #
+    #     context = self.get_contexts(user_prompt)
+    #
+    #     messages = self.get_messages(user_prompt, context)
+    #
+    #     response = self.__ollama_client.chat(
+    #         model=self.__settings.ollama_model_name,
+    #         messages=messages,
+    #     )
+    #
+    #     print(response.message.content)
 
     def generate_script(self, user_prompt: str) -> str:
-        context = self.get_contexts(user_prompt)
+        context = self.__retriever.query_points(user_prompt)
         messages = self.get_messages(user_prompt, context)
         response = self.__ollama_client.chat(
             model=self.__settings.ollama_model_name,

@@ -9,6 +9,9 @@ import logging
 
 from app.db.repositories.requests import create_request, mark_request_error, mark_request_success
 from app.db.session import get_db_session
+
+from app.vector_db.client import get_qdrant_client
+from app.vector_db.retriever import QdrantRetriever
 from app.services.main_pipeline_with_RAG import MainPipeline
 from app.core.config import get_settings
 
@@ -17,7 +20,10 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 router = APIRouter()
-main_pipeline = MainPipeline(settings)
+
+qdrant_client = get_qdrant_client()
+retriever = QdrantRetriever(qdrant_client, settings.qdrant_collection_name)
+main_pipeline = MainPipeline(settings, retriever)
 
 
 executor = ThreadPoolExecutor(max_workers=2)
