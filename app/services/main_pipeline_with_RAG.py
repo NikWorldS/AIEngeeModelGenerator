@@ -13,21 +13,6 @@ class MainPipeline:
 
         self.__ollama_client = Client()
 
-        # self.__create_qdrant_collection(self.__settings.qdrant_collection_name)
-
-    # def __create_qdrant_collection(self, collection_name) -> None:
-    #     """Create the qdrant collection if its not exists with the given name"""
-    #     try:
-    #         self.__qdrant_client.get_collection(collection_name)
-    #     except UnexpectedResponse:
-    #         self.__qdrant_client.create_collection(
-    #             collection_name=collection_name,
-    #             vectors_config=VectorParams(
-    #                 size=self.__embedding_model.get_sentence_embedding_dimension(),
-    #                 distance=Distance.DOT
-    #             ),
-    #         )
-
     @staticmethod
     def get_system_prompt(context_text: list[str]) -> str:
         """Return system prompt with adding context text"""
