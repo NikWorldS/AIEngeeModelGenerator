@@ -9,9 +9,7 @@ import logging
 
 from app.db.repositories.requests import create_request, mark_request_error, mark_request_success
 from app.db.session import get_db_session
-
-from app.vector_db.client import get_qdrant_client
-from app.vector_db.retriever import QdrantRetriever
+from app.core.dependencies import get_pipeline, get_executor
 from app.services.main_pipeline_with_RAG import MainPipeline
 from app.core.config import get_settings
 
@@ -21,13 +19,6 @@ settings = get_settings()
 
 router = APIRouter()
 
-qdrant_client = get_qdrant_client()
-retriever = QdrantRetriever(qdrant_client, settings.qdrant_collection_name)
-main_pipeline = MainPipeline(settings, retriever)
-
-
-executor = ThreadPoolExecutor(max_workers=2)
-
 class GenerateRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=2000)
 
@@ -35,7 +26,12 @@ class GenerateResponse(BaseModel):
     script: str
 
 @router.post("/generate", response_model=GenerateResponse)
-def generate(request: GenerateRequest, db_session: Session = Depends(get_db_session)):
+def generate(
+    request: GenerateRequest,
+    db_session: Session = Depends(get_db_session),
+    main_pipeline: MainPipeline = Depends(get_pipeline),
+    executor: ThreadPoolExecutor = Depends(get_executor)
+    ):
     logger.info("Generate request received")
     request_id = uuid.uuid4()
     create_request(db_session, request_id, request.prompt)
