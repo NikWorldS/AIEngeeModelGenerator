@@ -9,6 +9,7 @@ import logging
 
 from app.db.repositories.requests import create_request, mark_request_error, mark_request_success
 from app.db.session import get_db_session
+from app.core.dependencies import get_pipeline, get_executor
 from app.services.main_pipeline_with_RAG import MainPipeline
 from app.core.config import get_settings
 
@@ -17,10 +18,6 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 router = APIRouter()
-main_pipeline = MainPipeline(settings)
-
-
-executor = ThreadPoolExecutor(max_workers=2)
 
 class GenerateRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=2000)
@@ -29,7 +26,12 @@ class GenerateResponse(BaseModel):
     script: str
 
 @router.post("/generate", response_model=GenerateResponse)
-def generate(request: GenerateRequest, db_session: Session = Depends(get_db_session)):
+def generate(
+    request: GenerateRequest,
+    db_session: Session = Depends(get_db_session),
+    main_pipeline: MainPipeline = Depends(get_pipeline),
+    executor: ThreadPoolExecutor = Depends(get_executor)
+    ):
     logger.info("Generate request received")
     request_id = uuid.uuid4()
     create_request(db_session, request_id, request.prompt)
