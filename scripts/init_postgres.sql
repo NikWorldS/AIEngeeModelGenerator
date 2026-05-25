@@ -13,20 +13,3 @@ CREATE TABLE IF NOT EXISTS requests (
     CONSTRAINT ck_requests_status
         CHECK (status IN ('pending', 'success', 'error'))
 );
-
-CREATE OR REPLACE FUNCTION set_requests_updated_at()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_requests_set_updated_at ON requests;
-
-CREATE TRIGGER trg_requests_set_updated_at
-BEFORE UPDATE ON requests
-FOR EACH ROW
-EXECUTE FUNCTION set_requests_updated_at();
