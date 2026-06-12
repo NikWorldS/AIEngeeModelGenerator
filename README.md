@@ -24,6 +24,7 @@
 
 ## Endpoints
 Тестовый - GET `/test/useless_endpoint` - возвращает то, что это бесполезный эндпоинт
+
 Основной - POST `/script/generate`:
 - Принимает `json` в формате
   ```json
